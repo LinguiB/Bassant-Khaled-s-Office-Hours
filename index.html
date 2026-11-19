@@ -72,14 +72,14 @@ input:focus,textarea:focus{outline:0;border-color:var(--sun);box-shadow:0 0 0 4p
 </section>
 
 <section id="hours"><h2>Office hours 🕒</h2><div class="card" id="hoursList"></div>
-  <p class="note">Can’t make it? Send me a message and we’ll find another time.</p></section>
+</section>
 
 <section id="message"><h2>Message me ✉️</h2>
   <form class="card" id="form">
     <label>Your name</label><input id="n" required maxlength="60" autocomplete="name">
     <div class="g2"><div><label>Student ID</label><input id="i" required maxlength="20" inputmode="numeric"></div>
-    <div><label>Group</label><input id="g" required maxlength="20"></div></div>
-    <label>College</label><input id="c" required maxlength="60">
+    <div><label>Group</label><select id="g" required><option value="" disabled selected>Choose your group</option><option value="B">B</option><option value="D">D</option><option value="E">E</option></select></div></div>
+    <label>Faculty</label><select id="c" required><option value="" disabled selected>Choose your faculty</option><option value="Engineering">Engineering</option><option value="Pharmacy">Pharmacy</option><option value="Arts and Design">Arts and Design</option><option value="Languages">Languages</option></select>
     <label>Your message</label><textarea id="m" rows="5" required maxlength="1500" placeholder="Write your question or note…"></textarea>
     <button class="btn" type="submit">Submit 🚀</button><p class="note" id="status"></p>
   </form></section>
@@ -105,9 +105,9 @@ input:focus,textarea:focus{outline:0;border-color:var(--sun);box-shadow:0 0 0 4p
 <script type="module">
 /* ====== 1) EDIT THESE ====== */
 const HOURS=[ // day: 0=Sun … 6=Sat
- {d:0,day:"Sunday",t:"8:30 AM – 10:30 AM",w:"Office E207"},
- {d:2,day:"Tuesday",t:"8:30 AM – 12:30 PM",w:"Office E207"},
- {d:4,day:"Thursday",t:"8:30 AM – 10:30 AM",w:"Office E207"}];
+ {d:0,day:"Sunday",t:"8:30 AM – 10:30 AM",w:"Office E207 / G017"},
+ {d:2,day:"Tuesday",t:"8:30 AM – 12:30 PM",w:"Office E207 / G017"},
+ {d:4,day:"Thursday",t:"8:30 AM – 10:30 AM",w:"Office E207 / G017"}];
 const firebaseConfig={apiKey:"PASTE",authDomain:"PASTE",projectId:"PASTE",appId:"PASTE"};
 /* =========================== */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -139,7 +139,7 @@ function renderAnn(){const t=!$('#inbox').hidden;const a=window._ann||[];
 $('#form').addEventListener('submit',async e=>{e.preventDefault();const st=$('#status');
   if(!ready){st.textContent='Not connected yet.';return}
   const btn=e.submitter;btn.disabled=true;st.textContent='Sending…';
-  try{await addDoc(collection(db,'messages'),{name:$('#n').value.trim(),sid:$('#i').value.trim(),group:$('#g').value.trim(),college:$('#c').value.trim(),text:$('#m').value.trim(),read:false,ts:serverTimestamp()});
+  try{await addDoc(collection(db,'messages'),{name:$('#n').value.trim(),sid:$('#i').value.trim(),group:$('#g').value,faculty:$('#c').value,text:$('#m').value.trim(),read:false,ts:serverTimestamp()});
     const r=btn.getBoundingClientRect();burst(r.left+r.width/2,r.top);st.textContent='Sent! I’ll get back to you soon 💌';$('#m').value=''}
   catch(err){st.className='err';st.textContent='Could not send. Try again.'}btn.disabled=false});
 /* teacher */
@@ -148,7 +148,7 @@ if(auth)onAuthStateChanged(auth,u=>{const on=!!u;$('#login').hidden=on;$('#inbox
   if(unsub){unsub();unsub=null}if(!on){document.title='Dr. Bassant · ENG201 & LN100';return}
   unsub=onSnapshot(query(collection(db,'messages'),orderBy('ts','desc'),limit(200)),s=>{
     const un=s.docs.filter(d=>!d.data().read).length;document.title=(un?`(${un}) `:'')+'Teacher inbox';
-    $('#msgs').innerHTML=s.docs.length?s.docs.map(d=>{const m=d.data();return `<div class="card msg ${m.read?'':'new'}"><b>${esc(m.name)}</b> <span class="meta">· ID ${esc(m.sid)} · ${esc(m.college)} · Group ${esc(m.group)}</span><p>${esc(m.text)}</p><span class="meta">${m.ts?m.ts.toDate().toLocaleString():''}</span><div style="margin-top:8px;display:flex;gap:8px">${m.read?'':`<button class="btn sm alt" data-read="${d.id}">Mark read</button>`}<button class="btn sm" data-del="${d.id}">Delete</button></div></div>`}).join(''):'<p class="note">No messages yet.</p>'})});
+    $('#msgs').innerHTML=s.docs.length?s.docs.map(d=>{const m=d.data();return `<div class="card msg ${m.read?'':'new'}"><b>${esc(m.name)}</b> <span class="meta">· ID ${esc(m.sid)} · ${esc(m.faculty||m.college||"")} · Group ${esc(m.group)}</span><p>${esc(m.text)}</p><span class="meta">${m.ts?m.ts.toDate().toLocaleString():''}</span><div style="margin-top:8px;display:flex;gap:8px">${m.read?'':`<button class="btn sm alt" data-read="${d.id}">Mark read</button>`}<button class="btn sm" data-del="${d.id}">Delete</button></div></div>`}).join(''):'<p class="note">No messages yet.</p>'})});
 $('#login').addEventListener('submit',async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,$('#le').value,$('#lp').value);$('#lerr').textContent=''}catch(x){$('#lerr').textContent='Wrong email or password.'}});
 $('#out').onclick=()=>signOut(auth);
 $('#annForm').addEventListener('submit',async e=>{e.preventDefault();await addDoc(collection(db,'announcements'),{title:$('#at').value.trim(),body:$('#ab').value.trim(),ts:serverTimestamp()});e.target.reset()});
