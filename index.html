@@ -220,10 +220,11 @@ async function enableTeacherPush(){
     const permission=await Notification.requestPermission();
     if(permission!=='granted')throw new Error('Notification permission was not granted. Check your browser settings.');
     const reg=await navigator.serviceWorker.ready;
-    const keyResponse=await fetch(PUSH_WORKER+'/push/key');
+    const keyResponse=await fetch(PUSH_WORKER+'/push/key?check='+Date.now(),{cache:'no-store'});
     if(!keyResponse.ok)throw new Error('Could not retrieve the notification public key.');
     const publicKey=(await keyResponse.text()).trim();
-    const applicationServerKey=Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+    const paddedKey=publicKey.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-publicKey.length%4)%4);
+    const applicationServerKey=Uint8Array.from(atob(paddedKey),c=>c.charCodeAt(0));
     let subscription=await reg.pushManager.getSubscription();
     if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey});
     const idToken=await auth.currentUser.getIdToken(true);
